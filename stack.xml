@@ -1,6 +1,6 @@
 <stack>
-  <description brief="Driver and SDK for Prosilica cameras">
-    This stack contains the ROS driver and SDK for Prosilica cameras.
+  <description brief="Driver and SDK for AVT/Prosilica cameras">
+    This stack contains the ROS driver and SDK for AVT/Prosilica cameras.
   </description>
   <author>Maintained by Patrick Mihelich</author>
   <license>BSD,Commercial</license>  

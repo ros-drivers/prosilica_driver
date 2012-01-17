@@ -1,5 +1,7 @@
 <package>
-  <description>A ROS node to provide access to Prosilica cameras.</description>
+  <description>
+  A ROS driver node for AVT/Prosilica Gigabit Ethernet (GigE) cameras.
+  </description>
   <author>Patrick Mihelich</author>
   <license>BSD</license>
   <review status="Doc Reviewed" notes="Jan 22 2010"/>

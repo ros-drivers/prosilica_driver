@@ -1,25 +1,25 @@
 <package>
 <description brief="Prosilica GigE SDK">
   <p>
-  The Prosilica GigE Linux SDK allows users to control and capture images
-  from Prosilica's GigE Vision gigabit Ethernet cameras. The ROS package
-  automatically downloads and extracts a tarball, installs headers and
-  libraries, and builds a few useful example programs.
+  The PvAPI SDK from AVT (originally Prosilica) allows users to control and
+  capture images from AVT's GigE Vision cameras. The ROS package automatically
+  downloads and extracts a tarball, installs headers and libraries, and builds a
+  few useful example programs.
   </p>
   <p>
-  We currently use version 1.20 of the SDK, released 7 April 2009. It is
-  known to work with version 1.36 of the Prosilica GigE Vision camera
-  firmware. We will update the version for bugfixes and for new features
-  we deem particularly useful to vision applications.
+  We currently use version 1.20 of the SDK, released 7 April 2009. It is known
+  to work with version 1.36 of the AVT GigE Vision camera firmware. We will
+  update the version for bugfixes and for new features we deem particularly
+  useful to vision applications.
   </p>
 </description>
-<author>Prosilica, Inc.</author>
+<author>Allied Vision Technologies. ROS package maintained by Patrick Mihelich.</author>
 <license>Commercial</license>
 <review status="Doc Reviewed" notes="Jan 22 2010"/>
-<url>http://www.prosilica.com/support/gige/ge_starter.html</url>
+<url>http://www.ros.org/wiki/prosilica_gige_sdk</url>
 <export>
   <cpp lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lPvAPI" cflags="-I${prefix}/include"/>
-  <doxymaker external="http://www.prosilica.com/support/gige/ge_starter.html"/>
+  <doxymaker external="http://www.alliedvisiontec.com/us/products/software/avt-pvapi-sdk.html"/>
 </export>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
