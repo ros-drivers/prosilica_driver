@@ -191,15 +191,6 @@ public:
     // Service call for setting calibration.
     set_camera_info_srv_ = nh_.advertiseService("set_camera_info", &ProsilicaNode::setCameraInfo, this);
 
-    /// @todo Enable in Fuerte - but is this correct? Packet size is handled by PvCaptureAdjustPacketSize()
-    /// in Camera::setup(), and if possible should be around 9000 to use Jumbo frames
-#if 0
-    // packet_size
-    int packet_size;
-    local_nh.param("packet_size", packet_size, 1500);
-    cam_->setAttribute("PacketSize", (tPvUint32)packet_size);
-#endif
-
     // Start dynamic_reconfigure
     reconfigure_server_.setCallback(boost::bind(&ProsilicaNode::configure, this, _1, _2));
   }
@@ -246,13 +237,13 @@ public:
     if (config.auto_exposure)
     {
       cam_->setExposure(0, prosilica::Auto);
-#if 0
-      /// @todo Enable in Fuerte
       if (PvAttrIsAvailable(cam_->handle(), "ExposureAutoMax") == ePvErrSuccess)
-        cam_->setAttribute("ExposureAutoMax", (tPvUint32)config.exposure_auto_max);
+      {
+        tPvUint32 us = config.exposure_auto_max*1000000. + 0.5;
+        cam_->setAttribute("ExposureAutoMax", us);
+      }
       if (PvAttrIsAvailable(cam_->handle(), "ExposureAutoTarget") == ePvErrSuccess)
         cam_->setAttribute("ExposureAutoTarget", (tPvUint32)config.exposure_auto_target);
-#endif
     }
     else {
       unsigned us = config.exposure*1000000. + 0.5;
@@ -264,11 +255,10 @@ public:
       if (PvAttrIsAvailable(cam_->handle(), "GainMode") == ePvErrSuccess)
       {
         cam_->setGain(0, prosilica::Auto);
-#if 0
-        /// @todo Enable in Fuerte
+        if (PvAttrIsAvailable(cam_->handle(), "GainAutoMax") == ePvErrSuccess)
+          cam_->setAttribute("GainAutoMax", (tPvUint32)config.gain_auto_max);
         if (PvAttrIsAvailable(cam_->handle(), "GainAutoTarget") == ePvErrSuccess)
           cam_->setAttribute("GainAutoTarget", (tPvUint32)config.gain_auto_target);
-#endif
       }
       else {
         tPvUint32 major, minor;
