@@ -121,6 +121,9 @@ public:
   void setRoiToWholeFrame();
   void setBinning(unsigned int binning_x = 1, unsigned int binning_y = 1);
 
+  //! Returns true if camera supports the attribute.
+  bool hasAttribute(const std::string &name);
+
   //! General get/set attribute functions.
   void getAttributeEnum(const std::string &name, std::string &value);
   void getAttribute(const std::string &name, tPvUint32 &value);

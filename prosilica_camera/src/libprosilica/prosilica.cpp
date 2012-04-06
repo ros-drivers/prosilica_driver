@@ -385,6 +385,11 @@ void Camera::setBinning(unsigned int binning_x, unsigned int binning_y)
              "Couldn't set vertical binning" );
 }
 
+bool Camera::hasAttribute(const std::string &name)
+{
+  return (PvAttrIsAvailable(handle_, name.c_str()) == ePvErrSuccess);
+}
+
 static void getStringValuedAttribute(std::string &value,
   boost::function<tPvErr (char*, unsigned long, unsigned long*)> get_fn)
 {

@@ -237,12 +237,12 @@ public:
     if (config.auto_exposure)
     {
       cam_->setExposure(0, prosilica::Auto);
-      if (PvAttrIsAvailable(cam_->handle(), "ExposureAutoMax") == ePvErrSuccess)
+      if (cam_->hasAttribute("ExposureAutoMax"))
       {
         tPvUint32 us = config.exposure_auto_max*1000000. + 0.5;
         cam_->setAttribute("ExposureAutoMax", us);
       }
-      if (PvAttrIsAvailable(cam_->handle(), "ExposureAutoTarget") == ePvErrSuccess)
+      if (cam_->hasAttribute("ExposureAutoTarget"))
         cam_->setAttribute("ExposureAutoTarget", (tPvUint32)config.exposure_auto_target);
     }
     else {
@@ -252,13 +252,11 @@ public:
 
     // Gain
     if (config.auto_gain) {
-      if (PvAttrIsAvailable(cam_->handle(), "GainMode") == ePvErrSuccess)
+      if (cam_->hasAttribute("GainAutoMax"))
       {
         cam_->setGain(0, prosilica::Auto);
-        if (PvAttrIsAvailable(cam_->handle(), "GainAutoMax") == ePvErrSuccess)
-          cam_->setAttribute("GainAutoMax", (tPvUint32)config.gain_auto_max);
-        if (PvAttrIsAvailable(cam_->handle(), "GainAutoTarget") == ePvErrSuccess)
-          cam_->setAttribute("GainAutoTarget", (tPvUint32)config.gain_auto_target);
+        cam_->setAttribute("GainAutoMax", (tPvUint32)config.gain_auto_max);
+        cam_->setAttribute("GainAutoTarget", (tPvUint32)config.gain_auto_target);
       }
       else {
         tPvUint32 major, minor;
@@ -275,7 +273,7 @@ public:
     
     // White balance
     if (config.auto_whitebalance) {
-      if (PvAttrIsAvailable(cam_->handle(), "WhitebalMode") == ePvErrSuccess)
+      if (cam_->hasAttribute("WhitebalMode"))
         cam_->setWhiteBalance(0, 0, prosilica::Auto);
       else {
         ROS_WARN("Auto white balance not available for this camera.");
