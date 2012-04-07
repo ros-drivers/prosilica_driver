@@ -80,7 +80,6 @@ private:
   bool running_;
   unsigned long max_data_rate_;
   tPvUint32 sensor_width_, sensor_height_; // full resolution dimensions (maybe should be in lib)
-  tPvUint32 max_binning_x_, max_binning_y_;
   bool auto_adjust_stream_bytes_per_second_;
 
   // Hardware triggering
@@ -166,8 +165,6 @@ public:
     tPvUint32 dummy;
     PvAttrRangeUint32(cam_->handle(), "Width", &dummy, &sensor_width_);
     PvAttrRangeUint32(cam_->handle(), "Height", &dummy, &sensor_height_);
-    PvAttrRangeUint32(cam_->handle(), "BinningX", &dummy, &max_binning_x_);
-    PvAttrRangeUint32(cam_->handle(), "BinningY", &dummy, &max_binning_y_);
     
     // Try to load intrinsics from on-camera memory.
     loadIntrinsics();
@@ -284,10 +281,20 @@ public:
       cam_->setWhiteBalance(config.whitebalance_blue, config.whitebalance_red, prosilica::Manual);
 
     // Binning configuration
-    config.binning_x = std::min(config.binning_x, (int)max_binning_x_);
-    config.binning_y = std::min(config.binning_y, (int)max_binning_y_);
-    int binning_x = config.binning_x, binning_y = config.binning_y;
-    cam_->setBinning(binning_x, binning_y);
+    if (cam_->hasAttribute("BinningX")) {
+      tPvUint32 max_binning_x, max_binning_y, dummy;
+      PvAttrRangeUint32(cam_->handle(), "BinningX", &dummy, &max_binning_x);
+      PvAttrRangeUint32(cam_->handle(), "BinningY", &dummy, &max_binning_y);
+      config.binning_x = std::min(config.binning_x, (int)max_binning_x);
+      config.binning_y = std::min(config.binning_y, (int)max_binning_y);
+      
+      cam_->setBinning(config.binning_x, config.binning_y);
+    }
+    else if (config.binning_x > 1 || config.binning_y > 1)
+    {
+      ROS_WARN("Binning not available for this camera.");
+      config.binning_x = config.binning_y = 1;
+    }
 
     // Region of interest configuration
     // Make sure ROI fits in image
@@ -301,13 +308,13 @@ public:
 
     // Adjust full-res ROI to binning ROI
     /// @todo Replicating logic from polledCallback
-    int x_offset = config.x_offset / binning_x;
-    int y_offset = config.y_offset / binning_y;
-    unsigned int right_x  = (config.x_offset + width  + binning_x - 1) / binning_x;
-    unsigned int bottom_y = (config.y_offset + height + binning_y - 1) / binning_y;
+    int x_offset = config.x_offset / config.binning_x;
+    int y_offset = config.y_offset / config.binning_y;
+    unsigned int right_x  = (config.x_offset + width  + config.binning_x - 1) / config.binning_x;
+    unsigned int bottom_y = (config.y_offset + height + config.binning_y - 1) / config.binning_y;
     // Rounding up is bad when at max resolution which is not divisible by the amount of binning
-    right_x = std::min(right_x, (unsigned)(sensor_width_ / binning_x));
-    bottom_y = std::min(bottom_y, (unsigned)(sensor_height_ / binning_y));
+    right_x = std::min(right_x, (unsigned)(sensor_width_ / config.binning_x));
+    bottom_y = std::min(bottom_y, (unsigned)(sensor_height_ / config.binning_y));
     width = right_x - x_offset;
     height = bottom_y - y_offset;
 
@@ -490,9 +497,11 @@ public:
     /// @todo Binning values retrieved here may differ from the ones used to actually
     /// capture the frame! Maybe need to clear queue when changing binning and/or
     /// stuff binning values into context?
-    tPvUint32 binning_x, binning_y;
-    cam_->getAttribute("BinningX", binning_x);
-    cam_->getAttribute("BinningY", binning_y);
+    tPvUint32 binning_x = 1, binning_y = 1;
+    if (cam_->hasAttribute("BinningX")) {
+      cam_->getAttribute("BinningX", binning_x);
+      cam_->getAttribute("BinningY", binning_y);
+    }
     // Binning averages bayer samples, so just call it mono8 in that case
     if (frame->Format == ePvFmtBayer8 && (binning_x > 1 || binning_y > 1))
       frame->Format = ePvFmtMono8;

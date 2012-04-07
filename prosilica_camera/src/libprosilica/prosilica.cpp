@@ -379,6 +379,10 @@ void Camera::setRoiToWholeFrame()
 
 void Camera::setBinning(unsigned int binning_x, unsigned int binning_y)
 {
+  // Permit setting to "no binning" on cameras without binning support
+  if (!hasAttribute("BinningX") && binning_x == 1 && binning_y == 1)
+    return;
+  
   CHECK_ERR( PvAttrUint32Set(handle_, "BinningX", binning_x),
              "Couldn't set horizontal binning" );
   CHECK_ERR( PvAttrUint32Set(handle_, "BinningY", binning_y),
