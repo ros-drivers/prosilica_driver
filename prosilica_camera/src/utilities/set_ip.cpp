@@ -27,10 +27,20 @@ void printSettings(const tPvCameraInfo& info, const tPvIpSettings& conf)
 int main(int argc, char** argv)
 {
   if (argc < 2) {
-    printf("Usage: %s 10.68.0.20\n", argv[0]);
+    printf("Usage: %s 10.68.0.20 [255.255.255.0] [0.0.0.0]\n", argv[0]);
     return 0;
   }
-  
+
+  char* netmask = "255.255.255.0";
+  if (argc >= 3) {
+    netmask = argv[2];
+  }
+
+  char* gateway = "0.0.0.0";
+  if (argc >= 4) {
+    netmask = argv[3];
+  }
+
   prosilica::init();
   // Make sure we call prosilica::fini() on exit.
   boost::shared_ptr<void> guard(static_cast<void*>(0), boost::bind(prosilica::fini));
@@ -73,9 +83,10 @@ int main(int argc, char** argv)
 
     printf("Applying new settings...\n");
     conf.ConfigMode = ePvIpConfigPersistent;
+    //conf.ConfigMode = ePvIpConfigDhcp;
     conf.CurrentIpAddress = conf.PersistentIpAddr = IP;
-    conf.CurrentIpSubnet = conf.PersistentIpSubnet = inet_addr("255.255.255.0");
-    conf.CurrentIpGateway = conf.PersistentIpGateway = inet_addr("0.0.0.0");
+    conf.CurrentIpSubnet = conf.PersistentIpSubnet = inet_addr(netmask);
+    conf.CurrentIpGateway = conf.PersistentIpGateway = inet_addr(gateway);
     if (PvCameraIpSettingsChange(uid, &conf)) {
       printf("ERROR: Failed to apply the new settings\n");
       return 1;
