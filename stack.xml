@@ -2,7 +2,7 @@
   <description brief="Driver and SDK for AVT/Prosilica cameras">
     This stack contains the ROS driver and SDK for AVT/Prosilica cameras.
   </description>
-  <author>Maintained by Patrick Mihelich</author>
+  <author>Maintained by William Woodall - wwoodall@willowgarage.com</author>
   <license>BSD,Commercial</license>  
   <review status="Doc Reviewed" notes="Jan 22 2010"/>
   <url>http://ros.org/wiki/prosilica_driver</url>
