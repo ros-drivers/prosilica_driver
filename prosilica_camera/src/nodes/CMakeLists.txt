@@ -1,2 +1,2 @@
 rosbuild_add_executable(prosilica_node prosilica_node.cpp)
-target_link_libraries(prosilica_node prosilica)
+rosbuild_link_boost(prosilica_node thread)
