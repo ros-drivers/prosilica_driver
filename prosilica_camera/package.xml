@@ -40,18 +40,4 @@
   <run_depend>camera_calibration_parsers</run_depend>
   <run_depend>polled_camera</run_depend>
 
-  <!--
-  <test_depend>prosilica_gige_sdk</test_depend>
-  <test_depend>roscpp</test_depend>
-  <test_depend>std_msgs</test_depend>
-  <test_depend>sensor_msgs</test_depend>
-  <test_depend>diagnostic_updater</test_depend>
-  <test_depend>diagnostic_msgs</test_depend>
-  <test_depend>image_transport</test_depend>
-  <test_depend>self_test</test_depend>
-  <test_depend>driver_base</test_depend>
-  <test_depend>dynamic_reconfigure</test_depend>
-  <test_depend>camera_calibration_parsers</test_depend>
-  <test_depend>polled_camera</test_depend>
-   -->
 </package>
