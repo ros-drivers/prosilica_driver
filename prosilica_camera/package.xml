@@ -1,6 +1,6 @@
 <package>
   <name>prosilica_camera</name>
-  <version>1.9.0</version>
+  <version>1.9.1</version>
   <description>A ROS driver node for AVT/Prosilica Gigabit Ethernet (GigE) cameras.</description>
   <maintainer email="ahendrix@willowgarage.com">Austin Hendrix</maintainer>
 
