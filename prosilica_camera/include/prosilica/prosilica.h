@@ -41,10 +41,10 @@
 #include <boost/thread.hpp>
 
 // PvApi.h isn't aware of the usual detection macros
-// TODO: support systems other than x86 linux
+//  these include support for i386, x86_64, and arm, on Linux and OSX
 #define _LINUX
 #define _x86
-#include <PvApi.h>
+#include <prosilica_gige_sdk/PvApi.h>
 #undef _LINUX
 #undef _x86
 

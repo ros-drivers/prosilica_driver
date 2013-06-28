@@ -33,7 +33,7 @@
 *********************************************************************/
 
 #include "prosilica/prosilica.h"
-#include <PvRegIo.h>
+#include <prosilica_gige_sdk/PvRegIo.h>
 #include <cassert>
 #include <cstdio>
 #include <ctime>
