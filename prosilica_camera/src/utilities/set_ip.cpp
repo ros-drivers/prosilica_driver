@@ -31,14 +31,16 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  char* netmask = "255.255.255.0";
+  char nm[] = "255.255.255.0";
+  char* netmask = nm;
   if (argc >= 3) {
     netmask = argv[2];
   }
 
-  char* gateway = "0.0.0.0";
+  char gw[] = "0.0.0.0";
+  char* gateway = gw;
   if (argc >= 4) {
-    netmask = argv[3];
+    gateway = argv[3];
   }
 
   prosilica::init();
