@@ -190,7 +190,6 @@ public:
    
     // Set the pixel format
     std::string pix_format = "";
-    local_nh.getParam("pixel_format", pix_format);
     if (local_nh.getParam("pixel_format", pix_format) && (pix_format == "Rgb24" || pix_format == "Bayer8"))
     {
       if (cam_->hasAttribute("PixelFormat"))
