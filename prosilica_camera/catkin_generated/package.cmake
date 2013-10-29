@@ -1,7 +1,0 @@
-set(_CATKIN_CURRENT_PACKAGE "prosilica_camera")
-set(prosilica_camera_MAINTAINER "Austin Hendrix <ahendrix@willowgarage.com>")
-set(prosilica_camera_DEPRECATED "")
-set(prosilica_camera_VERSION "1.9.3")
-set(prosilica_camera_BUILD_DEPENDS "prosilica_gige_sdk" "roscpp" "std_msgs" "sensor_msgs" "diagnostic_updater" "diagnostic_msgs" "image_transport" "self_test" "driver_base" "dynamic_reconfigure" "camera_calibration_parsers" "polled_camera" "rosconsole")
-set(prosilica_camera_RUN_DEPENDS "prosilica_gige_sdk" "roscpp" "std_msgs" "sensor_msgs" "diagnostic_updater" "diagnostic_msgs" "image_transport" "self_test" "driver_base" "dynamic_reconfigure" "camera_calibration_parsers" "polled_camera")
-set(prosilica_camera_BUILDTOOL_DEPENDS "catkin")
