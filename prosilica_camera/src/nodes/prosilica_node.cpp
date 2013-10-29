@@ -194,7 +194,7 @@ public:
     {
       if (cam_->hasAttribute("PixelFormat"))
       {
-        ROS_WARN_STREAM("Setting camera pixel format to " << pix_format);
+        ROS_DEBUG_STREAM("Setting camera pixel format to " << pix_format);
         cam_->setAttribute("PixelFormat", pix_format);
       }
     }
@@ -352,7 +352,7 @@ public:
       }
       else
       {
-        ROS_WARN("rgb24 format is not supported by your camera");
+        ROS_WARN("Changing pixel format is not supported by your camera");
       }
     }
 
