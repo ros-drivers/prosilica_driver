@@ -103,6 +103,7 @@ public:
 
   //! Must be used before calling start() in a non-triggered mode.
   void setFrameCallback(boost::function<void (tPvFrame*)> callback);
+  void setFrameRate(tPvFloat32 frame_rate);
   //! Start capture.
   void start(FrameStartTriggerMode = Freerun, AcquisitionMode = Continuous);
   //! Stop capture.

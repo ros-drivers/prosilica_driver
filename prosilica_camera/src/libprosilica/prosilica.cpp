@@ -208,16 +208,22 @@ void Camera::setFrameCallback(boost::function<void (tPvFrame*)> callback)
   userCallback_ = callback;
 }
 
+void Camera::setFrameRate(tPvFloat32 frame_rate){
+  CHECK_ERR( PvAttrFloat32Set(handle_, "FrameRate", frame_rate),
+	     "Could not set frame rate");
+}
+
+
 void Camera::start(FrameStartTriggerMode fmode, AcquisitionMode amode)
 {
   assert( FSTmode_ == None && fmode != None );
   ///@todo verify this assert again
-  assert( fmode == SyncIn1 || fmode == SyncIn2 || fmode == Software || !userCallback_.empty() );
+  assert( fmode == SyncIn1 || fmode == SyncIn2 || fmode == Software || fmode == FixedRate || !userCallback_.empty() );
   
   // set camera in acquisition mode
   CHECK_ERR( PvCaptureStart(handle_), "Could not start capture");
 
-  if (fmode == Freerun || fmode == SyncIn1 || fmode == SyncIn2)
+  if (fmode == Freerun || fmode == FixedRate || fmode == SyncIn1 || fmode == SyncIn2)
     for (unsigned int i = 0; i < bufferSize_; ++i)
       PvCaptureQueueFrame(handle_, frames_ + i, Camera::frameDone);
 
