@@ -216,6 +216,7 @@ public:
     else if (config.trigger_mode == "fixedrate") {
       trigger_mode_ = prosilica::FixedRate;
       desired_freq_ = config.trig_rate;
+      cam_->setFrameRate(desired_freq_);
     }
     else if (config.trigger_mode == "polled") {
       trigger_mode_ = prosilica::Software;
@@ -362,7 +363,6 @@ public:
           trigger_sub_ = nh_.subscribe(trig_timestamp_topic_, 1, &ProsilicaNode::syncInCallback, this);
       }
       else if (trigger_mode_ == prosilica::FixedRate){
-	cam_->setFrameRate(desired_freq_);
       }
       else {
         assert(trigger_mode_ == prosilica::Freerun);
