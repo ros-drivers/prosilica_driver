@@ -213,14 +213,11 @@ public:
       trigger_mode_ = prosilica::SyncIn2;
       desired_freq_ = config.trig_rate;
     }
-#if 0
     else if (config.trigger_mode == "fixedrate") {
-      ROS_DEBUG("Fixed rate not supported yet implementing software");
-      trigger_mode_ = prosilica::Software;
-      ///@todo add the fixed rate implementation
-      desired_freq_ = 0;
+      trigger_mode_ = prosilica::FixedRate;
+      desired_freq_ = config.trig_rate;
+      cam_->setFrameRate(desired_freq_);
     }
-#endif
     else if (config.trigger_mode == "polled") {
       trigger_mode_ = prosilica::Software;
       desired_freq_ = 0;
@@ -364,6 +361,8 @@ public:
       if ((trigger_mode_ == prosilica::SyncIn1) || (trigger_mode_ == prosilica::SyncIn2)) {
         if (!trig_timestamp_topic_.empty())
           trigger_sub_ = nh_.subscribe(trig_timestamp_topic_, 1, &ProsilicaNode::syncInCallback, this);
+      }
+      else if (trigger_mode_ == prosilica::FixedRate){
       }
       else {
         assert(trigger_mode_ == prosilica::Freerun);
