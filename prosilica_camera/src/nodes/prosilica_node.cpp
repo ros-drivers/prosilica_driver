@@ -204,23 +204,52 @@ public:
       trigger_mode_ = prosilica::Freerun;
       /// @todo Tighter bound than this minimal check
       desired_freq_ = 1; // make sure we get _something_
+
+      // show streaming options
+      config.groups.streaming_settings.state = true;
+      // hide trigger and fixed rate options
+      config.groups.trigger_settings.state = false;
+      config.groups.fixed_rate_settings.state = false;
     }
     else if (config.trigger_mode == "syncin1") {
       trigger_mode_ = prosilica::SyncIn1;
       desired_freq_ = config.trig_rate;
+
+      // show trigger options
+      config.groups.trigger_settings.state = true;
+      // hide stream and fixed rate options
+      config.groups.streaming_settings.state = false;
+      config.groups.fixed_rate_settings.state = false;
     }
     else if (config.trigger_mode == "syncin2") {
       trigger_mode_ = prosilica::SyncIn2;
       desired_freq_ = config.trig_rate;
+
+      // show trigger options
+      config.groups.trigger_settings.state = true;
+      // hide stream and fixed rate options
+      config.groups.streaming_settings.state = false;
+      config.groups.fixed_rate_settings.state = false;
     }
     else if (config.trigger_mode == "fixedrate") {
       trigger_mode_ = prosilica::FixedRate;
-      desired_freq_ = config.trig_rate;
+      desired_freq_ = config.fixed_rate;
       cam_->setFrameRate(desired_freq_);
+
+      // show fixed rate options
+      config.groups.fixed_rate_settings.state = true;
+      // hide trigger and fixed rate options
+      config.groups.trigger_settings.state = false;
+      config.groups.streaming_settings.state = false;
     }
     else if (config.trigger_mode == "polled") {
       trigger_mode_ = prosilica::Software;
       desired_freq_ = 0;
+
+      // hide trigger, streaming and fixed rate options
+      config.groups.trigger_settings.state = false;
+      config.groups.streaming_settings.state = false;
+      config.groups.fixed_rate_settings.state = false;
     }
     else {
       ROS_ERROR("Invalid trigger mode '%s' in reconfigure request", config.trigger_mode.c_str());
