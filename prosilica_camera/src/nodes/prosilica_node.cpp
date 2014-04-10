@@ -63,6 +63,44 @@
 #include "prosilica/prosilica.h"
 #include "prosilica/rolling_sum.h"
 
+/** Given ROI and binning parameters, define the new ROI
+ * @param x_offset_in the X offset of the input ROI (might be changed to fit in the image)
+ * @param y_offset_in the Y offset of the input ROI (might be changed to fit in the image)
+ * @param width_in the width of the input ROI (might be changed to fit in the image)
+ * @param height_in the height of the input ROI (might be changed to fit in the image)
+ * @param sensor_width the width of the input image
+ * @param sensor_height the height of the input image
+ * @param binning_x the binning in X (number of pixels mered together)
+ * @param binning_y the binning in X (number of pixels mered together)
+ * @param x_offset_out the X offset of the output ROI
+ * @param y_offset_out the Y offset of the output ROI
+ * @param width_out the width of the output ROI
+ * @param height_out the height of the output ROI
+ */
+void defineROI(int &x_offset_in, int &y_offset_in, int &width_in, int &height_in, int sensor_width, int sensor_height, int binning_x, int binning_y,
+		int &x_offset_out, int &y_offset_out, int &width_out, int &height_out) {
+    // Region of interest configuration
+    // Make sure ROI fits in image
+    x_offset_in = std::min(x_offset_in, (int)sensor_width - 1);
+    y_offset_in = std::min(y_offset_in, (int)sensor_height - 1);
+    width_in  = std::min(width_in, (int)sensor_width - x_offset_in);
+    height_in = std::min(height_in, (int)sensor_height - y_offset_in);
+    // If width or height is 0, set it as large as possible
+    width_out  = width_in  ? width_in  : sensor_width  - x_offset_in;
+    height_out = height_in ? height_in : sensor_height - y_offset_in;
+
+    // Adjust full-res ROI to binning ROI
+    x_offset_out = x_offset_in / binning_x;
+    y_offset_out = y_offset_in / binning_y;
+    int right_x  = (x_offset_in + width_out  + binning_x - 1) / binning_x;
+    int bottom_y = (y_offset_in + height_out + binning_y - 1) / binning_y;
+    // Rounding up is bad when at max resolution which is not divisible by the amount of binning
+    right_x = std::min(right_x, sensor_width / binning_x);
+    bottom_y = std::min(bottom_y, sensor_height / binning_y);
+    width_out = right_x - x_offset_out;
+    height_out = bottom_y - y_offset_out;
+}
+
 /// @todo Only stream when subscribed to
 class ProsilicaNode
 {
@@ -296,27 +334,9 @@ public:
       config.binning_x = config.binning_y = 1;
     }
 
-    // Region of interest configuration
-    // Make sure ROI fits in image
-    config.x_offset = std::min(config.x_offset, (int)sensor_width_ - 1);
-    config.y_offset = std::min(config.y_offset, (int)sensor_height_ - 1);
-    config.width  = std::min(config.width, (int)sensor_width_ - config.x_offset);
-    config.height = std::min(config.height, (int)sensor_height_ - config.y_offset);
-    // If width or height is 0, set it as large as possible
-    int width  = config.width  ? config.width  : sensor_width_  - config.x_offset;
-    int height = config.height ? config.height : sensor_height_ - config.y_offset;
-
-    // Adjust full-res ROI to binning ROI
-    /// @todo Replicating logic from polledCallback
-    int x_offset = config.x_offset / config.binning_x;
-    int y_offset = config.y_offset / config.binning_y;
-    unsigned int right_x  = (config.x_offset + width  + config.binning_x - 1) / config.binning_x;
-    unsigned int bottom_y = (config.y_offset + height + config.binning_y - 1) / config.binning_y;
-    // Rounding up is bad when at max resolution which is not divisible by the amount of binning
-    right_x = std::min(right_x, (unsigned)(sensor_width_ / config.binning_x));
-    bottom_y = std::min(bottom_y, (unsigned)(sensor_height_ / config.binning_y));
-    width = right_x - x_offset;
-    height = bottom_y - y_offset;
+    int x_offset, y_offset, width, height;
+    defineROI(config.x_offset, config.y_offset, config.width, config.height, sensor_width_, sensor_height_,
+              config.binning_x, config.binning_y, x_offset, y_offset, width, height);
 
     cam_->setRoi(x_offset, y_offset, width, height);
     
@@ -403,15 +423,17 @@ public:
       cam_->setBinning(req.binning_x, req.binning_y);
 
       if (req.roi.x_offset || req.roi.y_offset || req.roi.width || req.roi.height) {
+        // Those variables might be modified so we copy them
+        int x_offset_in = req.roi.x_offset, y_offset_in = req.roi.y_offset, width_in = req.roi.width,
+            height_in = req.roi.height;
+        // Final results
+        int x_offset, y_offset, width, height;
         // GigE cameras use ROI in binned coordinates, so scale the values down.
         // The ROI is expanded if necessary to land on binned coordinates.
-        unsigned int left_x = req.roi.x_offset / req.binning_x;
-        unsigned int top_y  = req.roi.y_offset / req.binning_y;
-        unsigned int right_x  = (req.roi.x_offset + req.roi.width  + req.binning_x - 1) / req.binning_x;
-        unsigned int bottom_y = (req.roi.y_offset + req.roi.height + req.binning_y - 1) / req.binning_y;
-        unsigned int width = right_x - left_x;
-        unsigned int height = bottom_y - top_y;
-        cam_->setRoi(left_x, top_y, width, height);
+        defineROI(x_offset_in, y_offset_in, width_in, height_in, sensor_width_, sensor_height_,
+		  req.binning_x, req.binning_y, x_offset, y_offset, width, height);
+
+        cam_->setRoi(x_offset, y_offset, width, height);
       } else {
         cam_->setRoiToWholeFrame();
       }
