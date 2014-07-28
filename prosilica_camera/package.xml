@@ -2,7 +2,7 @@
   <name>prosilica_camera</name>
   <version>1.9.3</version>
   <description>A ROS driver node for AVT/Prosilica Gigabit Ethernet (GigE) cameras.</description>
-  <maintainer email="ahendrix@willowgarage.com">Austin Hendrix</maintainer>
+  <maintainer email="namniart@gmail.com">Austin Hendrix</maintainer>
 
   <license>BSD</license>
 
