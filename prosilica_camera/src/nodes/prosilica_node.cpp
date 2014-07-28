@@ -187,7 +187,18 @@ public:
 
     // Service call for setting calibration.
     set_camera_info_srv_ = nh_.advertiseService("set_camera_info", &ProsilicaNode::setCameraInfo, this);
-
+   
+    // Set the pixel format
+    std::string pix_format = "";
+    if (local_nh.getParam("pixel_format", pix_format) && (pix_format == "Rgb24" || pix_format == "Bayer8"))
+    {
+      if (cam_->hasAttribute("PixelFormat"))
+      {
+        ROS_DEBUG_STREAM("Setting camera pixel format to " << pix_format);
+        cam_->setAttribute("PixelFormat", pix_format);
+      }
+    }
+    
     // Start dynamic_reconfigure
     reconfigure_server_.setCallback(boost::bind(&ProsilicaNode::configure, this, _1, _2));
   }
@@ -327,6 +338,20 @@ public:
     auto_adjust_stream_bytes_per_second_ = config.auto_adjust_stream_bytes_per_second;
     if (!auto_adjust_stream_bytes_per_second_)
       cam_->setAttribute("StreamBytesPerSecond", (tPvUint32)config.stream_bytes_per_second);
+
+    // Change the pixel format
+    if (config.pixel_format == "Rgb24" || config.pixel_format == "Bayer8")
+    {
+      if (cam_->hasAttribute("PixelFormat"))
+      {
+        ROS_DEBUG_STREAM("Setting camera pixel format to " << config.pixel_format);
+        cam_->setAttribute("PixelFormat", config.pixel_format);
+      }
+      else
+      {
+        ROS_WARN("Changing pixel format is not supported by your camera");
+      }
+    }
 
     /// @todo If exception thrown due to bad settings, will fail to start camera
     if (level >= (uint32_t)driver_base::SensorLevels::RECONFIGURE_STOP)
