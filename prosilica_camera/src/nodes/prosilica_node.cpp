@@ -532,45 +532,40 @@ public:
 
   void loadIntrinsics()
   {
-	  ros::NodeHandle local_nh("~");
-	  std::string file;
-	  local_nh.getParam("conf_file", file);
+    ros::NodeHandle local_nh("~");
+    std::string file;
+    local_nh.getParam("conf_file", file);
 
-	  std::string extension;
+    std::string extension;
 
-	  extension = file.substr(file.find('.') + 1, std::string::npos);
+    extension = file.substr(file.find('.') + 1, std::string::npos);
 
-	  if(file.length())
-	  {
-		  std::string info = "Configuration file: " + file;
-		  ROS_INFO(info.c_str());
-	  }
+    if(file.length()) {
+      std::string info = "Configuration file: " + file;
+      ROS_INFO(info.c_str());
+	}
 
-	  std::string camera_name;
-	  if(!extension.length())
-		  ROS_WARN("Configuration file not set. Trying to load intrinsics from camera memory ...");
-	  else if(extension == "ini")
-	  {
-		  if(camera_calibration_parsers::readCalibrationIni(file, camera_name, cam_info_))
-		  {
-		  	  ROS_INFO("Loaded intrinsics for camera '%s' from file '%s'.", camera_name.c_str(), file.c_str());
-		  	  return;
-		  }
-		  else
-			  ROS_WARN("Failed to load intrinsics from file. Trying to load intrinsics from camera memory ...");
-	  }
-	  else if(extension == "yml")
-	  {
-		  if(camera_calibration_parsers::readCalibrationYml(file, camera_name, cam_info_))
-		  {
-			  ROS_INFO("Loaded intrinsics for camera '%s' from file '%s'.", camera_name.c_str(), file.c_str());
-			  return;
-		  }
-		  else
-			  ROS_WARN("Failed to load intrinsics from file. Trying to load intrinsics from camera memory ...");
-	  }
-	  else
-		  ROS_ERROR("Unsupported configuration file type! Loading calibration from camera memory ...");
+    std::string camera_name;
+    if(!extension.length())
+      ROS_WARN("Configuration file not set. Trying to load intrinsics from camera memory ...");
+      else if(extension == "ini") {
+        if(camera_calibration_parsers::readCalibrationIni(file, camera_name, cam_info_)) {
+          ROS_INFO("Loaded intrinsics for camera '%s' from file '%s'.", camera_name.c_str(), file.c_str());
+          return;
+        }
+        else
+          ROS_WARN("Failed to load intrinsics from file. Trying to load intrinsics from camera memory ...");
+      }
+      else if(extension == "yml") {
+        if(camera_calibration_parsers::readCalibrationYml(file, camera_name, cam_info_)) {
+          ROS_INFO("Loaded intrinsics for camera '%s' from file '%s'.", camera_name.c_str(), file.c_str());
+          return;
+        }
+        else
+          ROS_WARN("Failed to load intrinsics from file. Trying to load intrinsics from camera memory ...");
+      }
+      else
+        ROS_ERROR("Unsupported configuration file type! Loading calibration from camera memory ...");
 
 	  // Retrieve contents of user memory
 	  std::string buffer(prosilica::Camera::USER_MEMORY_SIZE, '\0');
@@ -578,10 +573,10 @@ public:
 
 	  // Parse calibration file
 
-	  if(camera_calibration_parsers::parseCalibrationIni(buffer, camera_name, cam_info_))
-		  ROS_INFO("Loaded calibration for camera '%s'.", camera_name.c_str());
+      if(camera_calibration_parsers::parseCalibrationIni(buffer, camera_name, cam_info_))
+        ROS_INFO("Loaded calibration for camera '%s'.", camera_name.c_str());
 	  else
-		  ROS_WARN("Failed to load intrinsics from camera.");
+        ROS_WARN("Failed to load intrinsics from camera.");
   }
 
   bool setCameraInfo(sensor_msgs::SetCameraInfo::Request& req,
