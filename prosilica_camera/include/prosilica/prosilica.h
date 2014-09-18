@@ -37,6 +37,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <boost/function.hpp>
 #include <boost/thread.hpp>
 
@@ -48,6 +49,15 @@
 #undef _LINUX
 #undef _x86
 
+
+template <class T>
+inline std::string to_string (const T& t)
+{
+    std::stringstream ss;
+    ss << t;
+    return ss.str();
+}
+
 namespace prosilica {
 
 struct ProsilicaException : public std::runtime_error
@@ -58,11 +68,21 @@ struct ProsilicaException : public std::runtime_error
     : std::runtime_error(msg), error_code(code)
   {}
 };
+struct CameraInfo
+{
+    std::string serial;
+    std::string name;
+    std::string guid;
+    std::string ip_address;
+    bool access;
+};
 
-void init();                // initializes API
-void fini();                // releases internal resources
-size_t numCameras();        // number of cameras found
-uint64_t getGuid(size_t i); // camera ids
+void init();                  // initializes API
+void fini();                  // releases internal resources
+size_t numCameras();          // number of cameras found
+uint64_t getGuid(size_t i);   // camera ids
+std::vector<CameraInfo> listCameras(); // get list of cameras available
+std::string getIPAddress(uint64_t guid); //get ip address data from guid
 
 /// According to FrameStartTriggerMode Enum - AVT GigE Camera and Driver Attributes
 /// Firmware 1.38 April 7,2010
@@ -104,10 +124,14 @@ public:
   //! Must be used before calling start() in a non-triggered mode.
   void setFrameCallback(boost::function<void (tPvFrame*)> callback);
   void setFrameRate(tPvFloat32 frame_rate);
+
+  void setKillCallback(boost::function<void (unsigned long)> callback);
   //! Start capture.
-  void start(FrameStartTriggerMode = Freerun, AcquisitionMode = Continuous);
+  void start(FrameStartTriggerMode = Freerun, tPvFloat32 frame_rate = 30, AcquisitionMode = Continuous);
   //! Stop capture.
   void stop();
+  //! remove callback
+  void removeEvents();
   //! Capture a single frame from the camera. Must be called after
   //! start(Software Triggered).
   tPvFrame* grab(unsigned long timeout_ms = PVINFINITE);
@@ -159,13 +183,21 @@ private:
   FrameStartTriggerMode FSTmode_;
   AcquisitionMode Amode_;
   boost::function<void (tPvFrame*)> userCallback_;
+  boost::function<void (unsigned long UniqueId)> killCallback_;
   boost::mutex frameMutex_;
+  boost::mutex aliveMutex_;
+  size_t bufferIndex_;
 
   void setup();
   
   static void frameDone(tPvFrame* frame);
+  static void kill(void* Context,
+                    tPvInterface Interface,
+                    tPvLinkEvent Event,
+                    unsigned long UniqueId);
 };
 
 } // namespace prosilica
 
 #endif
+
