@@ -63,7 +63,7 @@ target_link_libraries(set_ip prosilica ${catkin_LIBRARIES})
 add_executable(set_inhibition src/utilities/set_inhibition.cpp)
 target_link_libraries(set_inhibition prosilica ${catkin_LIBRARIES})
 
-install(TARGETS prosilica_node prosilica_nodelet write_memory read_memory set_ip set_inhibition
+install(TARGETS prosilica_node write_memory read_memory set_ip set_inhibition
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(TARGETS prosilica prosilica_nodelet
@@ -74,5 +74,5 @@ install(TARGETS prosilica prosilica_nodelet
 install(DIRECTORY launch
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-install(FILES prosilica.launch streaming.launch nodelet_plugins.xml
+install(FILES prosilica.launch streaming.launch plugins/nodelet_plugins.xml
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
