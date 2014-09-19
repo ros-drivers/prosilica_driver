@@ -565,7 +565,7 @@ void Camera::frameDone(tPvFrame* frame)
   Camera* camPtr = (Camera*) frame->Context[0];
   if (camPtr && !camPtr->userCallback_.empty()) {
     // TODO: thread safety OK here?
-    //boost::lock_guard<boost::mutex> guard(camPtr->frameMutex_);
+    boost::lock_guard<boost::mutex> guard(camPtr->frameMutex_);
     camPtr->userCallback_(frame);
   }
 
