@@ -88,18 +88,6 @@ static unsigned long cameraNum = 0;
 void init()
 {
   CHECK_ERR( PvInitialize(), "Failed to initialize Prosilica API" );
-
-  // Spend up to 1s trying to find a camera. Finding no camera is not
-  // an error; the user may still be able open one by IP address.
-  for (int tries = 0; tries < 5; ++tries)
-  {
-    cameraNum = PvCameraList(cameraList, MAX_CAMERA_LIST, NULL);
-    if (cameraNum)
-      return;
-    usleep(200000);
-  }
-  
-  /// @todo Callbacks for add/remove camera?
 }
 
 void fini()
@@ -109,6 +97,7 @@ void fini()
 
 size_t numCameras()
 {
+  cameraNum = PvCameraList(cameraList, MAX_CAMERA_LIST, NULL);
   return cameraNum;
 }
 
@@ -120,10 +109,58 @@ uint64_t getGuid(size_t i)
   return cameraList[i].UniqueId;
 }
 
+std::vector<CameraInfo> listCameras()
+{
+    std::vector<CameraInfo> cameras;
+    tPvCameraInfo cameraList[MAX_CAMERA_LIST];
+    unsigned long cameraNum = 0;
+    //! get list of all cameras
+    cameraNum = PvCameraList(cameraList, MAX_CAMERA_LIST, NULL);
+    //! append list of unreachable cameras
+    if (cameraNum < MAX_CAMERA_LIST)
+    {
+        cameraNum += PvCameraListUnreachable(&cameraList[cameraNum], MAX_CAMERA_LIST-cameraNum, NULL);
+    }
+    if(cameraNum)
+    {
+        struct in_addr addr;
+        tPvIpSettings Conf;
+
+        //! get info
+        for(unsigned long i=0; i < cameraNum; i++)
+        {
+
+            CameraInfo camInfo;
+            camInfo.serial     = to_string(cameraList[i].SerialString);
+            camInfo.name       = to_string(cameraList[i].DisplayName);
+            camInfo.guid       = to_string(cameraList[i].UniqueId);
+            PvCameraIpSettingsGet(cameraList[i].UniqueId,&Conf);
+            addr.s_addr = Conf.CurrentIpAddress;
+            camInfo.ip_address = to_string(inet_ntoa(addr));
+            camInfo.access     = cameraList[i].PermittedAccess & ePvAccessMaster ? true : false;
+
+            cameras.push_back(camInfo);
+        }
+    }
+    return cameras;
+}
+
+std::string getIPAddress(uint64_t guid)
+{
+    struct in_addr addr;
+    tPvIpSettings Conf;
+    CHECK_ERR(PvCameraIpSettingsGet(guid, &Conf), "Unable to retrieve IP address");
+    addr.s_addr = Conf.CurrentIpAddress;
+    std::stringstream ip;
+    ip<<inet_ntoa(addr);
+    return ip.str();
+}
+
 /// @todo support opening as monitor?
 static void openCamera(boost::function<tPvErr (tPvCameraInfo*)> info_fn,
                        boost::function<tPvErr (tPvAccessFlags)> open_fn)
 {
+  cameraNum = PvCameraList(cameraList, MAX_CAMERA_LIST, NULL);
   tPvCameraInfo info;
   CHECK_ERR( info_fn(&info), "Unable to find requested camera" );
 
@@ -187,10 +224,13 @@ void Camera::setup()
     frames_[i].ImageBufferSize = frameSize_;
     frames_[i].Context[0] = (void*)this; // for frameDone callback
   }
+
+  PvLinkCallbackRegister(Camera::kill, ePvLinkRemove, this);
 }
 
 Camera::~Camera()
 {
+  PvLinkCallbackUnRegister(Camera::kill, ePvLinkRemove);
   stop();
   
   PvCameraClose(handle_);
@@ -207,42 +247,56 @@ void Camera::setFrameCallback(boost::function<void (tPvFrame*)> callback)
 {
   userCallback_ = callback;
 }
-
 void Camera::setFrameRate(tPvFloat32 frame_rate){
   CHECK_ERR( PvAttrFloat32Set(handle_, "FrameRate", frame_rate),
 	     "Could not set frame rate");
 }
 
-
-void Camera::start(FrameStartTriggerMode fmode, AcquisitionMode amode)
+void Camera::setKillCallback(boost::function<void (unsigned long UniqueId)> callback)
 {
-  assert( FSTmode_ == None && fmode != None );
-  ///@todo verify this assert again
-  assert( fmode == SyncIn1 || fmode == SyncIn2 || fmode == Software || fmode == FixedRate || !userCallback_.empty() );
-  
-  // set camera in acquisition mode
-  CHECK_ERR( PvCaptureStart(handle_), "Could not start capture");
+    killCallback_ = callback;
+}
 
-  if (fmode == Freerun || fmode == FixedRate || fmode == SyncIn1 || fmode == SyncIn2)
-    for (unsigned int i = 0; i < bufferSize_; ++i)
-      PvCaptureQueueFrame(handle_, frames_ + i, Camera::frameDone);
+void Camera::start(FrameStartTriggerMode fmode, tPvFloat32 frame_rate, AcquisitionMode amode)
+{
+    assert( FSTmode_ == None && fmode != None );
+    ///@todo verify this assert again
+    assert( fmode == SyncIn1 || fmode == SyncIn2 || fmode == Software || fmode == FixedRate || !userCallback_.empty() );
 
-  // start capture after setting acquisition and trigger modes
-  try {
-    ///@todo take this one also as an argument
-    CHECK_ERR( PvAttrEnumSet(handle_, "AcquisitionMode", acquisitionModes[amode]),
-               "Could not set acquisition mode" );
-    CHECK_ERR( PvAttrEnumSet(handle_, "FrameStartTriggerMode", triggerModes[fmode]),
-               "Could not set trigger mode" );
-    CHECK_ERR( PvCommandRun(handle_, "AcquisitionStart"),
-               "Could not start acquisition" );
-  } 
-  catch (ProsilicaException& e) {
-    PvCaptureEnd(handle_); // reset to non capture mode
-    throw; // rethrow
-  }
-  FSTmode_ = fmode;
-  Amode_ = amode;
+    // set camera in acquisition mode
+    CHECK_ERR( PvCaptureStart(handle_), "Could not start capture");
+
+    if (fmode == Freerun || fmode == FixedRate || fmode == SyncIn1 || fmode == SyncIn2)
+    {
+        for (unsigned int i = 0; i < bufferSize_; ++i)
+            PvCaptureQueueFrame(handle_, frames_ + i, Camera::frameDone);
+
+    }
+    else
+    {
+        bufferIndex_ = 0;
+        CHECK_ERR( PvCaptureQueueFrame(handle_, &frames_[bufferIndex_], NULL), "Could not queue frame");
+    }
+
+    // start capture after setting acquisition and trigger modes
+    try {
+        ///@todo take this one also as an argument
+        CHECK_ERR( PvAttrEnumSet(handle_, "AcquisitionMode", acquisitionModes[amode]),
+                   "Could not set acquisition mode" );
+        CHECK_ERR( PvAttrEnumSet(handle_, "FrameStartTriggerMode", triggerModes[fmode]),
+                   "Could not set trigger mode" );
+        CHECK_ERR( PvCommandRun(handle_, "AcquisitionStart"),
+                   "Could not start acquisition" );
+    }
+    catch (ProsilicaException& e) {
+        stop();
+        throw; // rethrow
+    }
+    FSTmode_ = fmode;
+    Amode_ = amode;
+    
+    CHECK_ERR( PvAttrFloat32Set(handle_, "FrameRate", frame_rate),
+	           "Could not set frame rate");
 }
 
 void Camera::stop()
@@ -251,64 +305,43 @@ void Camera::stop()
     return;
   
   PvCommandRun(handle_, "AcquisitionStop");
-  PvCaptureEnd(handle_);
   PvCaptureQueueClear(handle_);
+  PvCaptureEnd(handle_);
   FSTmode_ = None;
+}
+
+void Camera::removeEvents()
+{
+    // clear all events
+    PvAttrUint32Set(handle_, "EventsEnable1", 0);
 }
 
 tPvFrame* Camera::grab(unsigned long timeout_ms)
 {
-  assert( FSTmode_ == Software );
-  
-  unsigned long time_so_far = 0;
-  while (time_so_far < timeout_ms)
-  {
-    /// @todo This is a hack, it seems that re-commanding the software trigger
-    /// too quickly may cause the Prosilica driver to complain that the sequence
-    /// of API calls is incorrect.
-    boost::this_thread::sleep(boost::posix_time::millisec(400));
-
-    // Queue up a single frame
+    assert( FSTmode_ == Software );
     tPvFrame* frame = &frames_[0];
-    CHECK_ERR( PvCaptureQueueFrame(handle_, frame, NULL), "Couldn't queue frame" );
-    
-    // Trigger the camera
-    CHECK_ERR( PvCommandRun(handle_, "FrameStartTriggerSoftware"),
-               "Couldn't trigger capture" );
 
-    // Wait for frame capture to finish. The wait call may timeout in less
-    // than the allotted time, so we keep trying until we exceed it.
-    tPvErr e = ePvErrSuccess;
-    do
+    CHECK_ERR( PvCommandRun(handle_, "FrameStartTriggerSoftware"), "Couldn't trigger capture" );
+    CHECK_ERR( PvCaptureWaitForFrameDone(handle_, frame, timeout_ms), "couldn't capture frame");
+    // don't requeue if capture has stopped
+    if (frame->Status == ePvErrUnplugged || frame->Status == ePvErrCancelled )
     {
-      try
-      {
-        if (e != ePvErrSuccess)
-          ROS_DEBUG("Retrying CaptureWait due to error: %s", errorStrings[e]);
-        clock_t start_time = clock();
-        e = PvCaptureWaitForFrameDone(handle_, frame, timeout_ms - time_so_far);
-        if (timeout_ms != PVINFINITE)
-          time_so_far += ((clock() - start_time) * 1000) / CLOCKS_PER_SEC;
-      } 
-      catch (prosilica::ProsilicaException &e) {
-        ROS_ERROR("Prosilica exception during grab, will retry: %s\n", e.what());
-      }
-    } while (e == ePvErrTimeout && time_so_far < timeout_ms);
-
-    if (e != ePvErrSuccess)
-      return NULL; // Something bad happened (camera unplugged?)
-    
-    if (frame->Status == ePvErrSuccess)
-      return frame; // Yay!
-
-    ROS_DEBUG("Error in frame: %s", errorStrings[frame->Status]);
-
-    // Retry if data was lost in transmission. Probably no hope on other errors.
-    if (frame->Status != ePvErrDataMissing && frame->Status != ePvErrDataLost)
       return NULL;
-  }
-  
-  return NULL;
+    }
+    CHECK_ERR( PvCaptureQueueFrame(handle_, frame, NULL), "Couldn't queue frame");
+
+    if (frame->Status == ePvErrSuccess)
+        return frame;
+    if (frame->Status == ePvErrDataMissing || frame->Status == ePvErrTimeout)
+    {
+        //! recommanding after an error seems to cause a sequence error if next command is too fast
+        boost::this_thread::sleep(boost::posix_time::millisec(50));
+        return NULL;
+    }
+    else
+        throw std::runtime_error("Unknown error grabbing frame");
+
+    return frame;
 }
 
 void Camera::setExposure(unsigned int val, AutoSetting isauto)
@@ -344,12 +377,18 @@ void Camera::setWhiteBalance(unsigned int blue, unsigned int red, AutoSetting is
                "Couldn't set white balance mode" );
   }
 
-  if (isauto == Manual && PvAttrIsAvailable(handle_, "WhitebalValueBlue"))
+  if (isauto == Manual)
   {
-    CHECK_ERR( PvAttrUint32Set(handle_, "WhitebalValueBlue", blue),
-               "Couldn't set white balance blue value" );
-    CHECK_ERR( PvAttrUint32Set(handle_, "WhitebalValueRed", red),
-               "Couldn't set white balance red value" );
+      if(hasAttribute("WhitebalValueBlue"))
+      {
+        CHECK_ERR( PvAttrUint32Set(handle_, "WhitebalValueBlue", blue),
+                   "Couldn't set white balance blue value" );
+      }
+      if(hasAttribute("WhitebalValueRed"))
+      {
+        CHECK_ERR( PvAttrUint32Set(handle_, "WhitebalValueRed", red),
+                   "Couldn't set white balance red value" );
+      }
   }
 }
 
@@ -522,25 +561,34 @@ void Camera::readUserMemory(char* data, size_t size)
 
 void Camera::frameDone(tPvFrame* frame)
 {
-  // don't requeue if capture has stopped
-  if (frame->Status == ePvErrUnplugged || frame->Status == ePvErrCancelled)
-    return;
 
   Camera* camPtr = (Camera*) frame->Context[0];
-  if (frame->Status == ePvErrSuccess && camPtr && !camPtr->userCallback_.empty()) {
+  if (camPtr && !camPtr->userCallback_.empty()) {
     // TODO: thread safety OK here?
     boost::lock_guard<boost::mutex> guard(camPtr->frameMutex_);
     camPtr->userCallback_(frame);
   }
-  else if (frame->Status == ePvErrDataMissing) {
-    // Avoid warning spew; lots of dropped packets will show up in the diagnostics.
-    ROS_DEBUG("Error in frame: %s\n", errorStrings[frame->Status]);
+
+  // don't requeue if capture has stopped
+  if (frame->Status == ePvErrUnplugged || frame->Status == ePvErrCancelled)
+  {
+    return;
   }
-  else {
-    ROS_WARN("Error in frame: %s\n", errorStrings[frame->Status]);
-  }
-  
   PvCaptureQueueFrame(camPtr->handle_, frame, Camera::frameDone);
+}
+
+
+void Camera::kill(void* Context,
+                   tPvInterface Interface,
+                   tPvLinkEvent Event,
+                   unsigned long UniqueId)
+{
+    Camera* camPtr = (Camera*) Context;
+    if (camPtr && !camPtr->killCallback_.empty())
+    {
+        //boost::lock_guard<boost::mutex> guard(camPtr->aliveMutex_);
+        camPtr->killCallback_(UniqueId);
+    }
 }
 
 tPvHandle Camera::handle()
@@ -549,3 +597,4 @@ tPvHandle Camera::handle()
 }
 
 } // namespace prosilica
+
