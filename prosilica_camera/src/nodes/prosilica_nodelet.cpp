@@ -49,6 +49,8 @@
 #include <sensor_msgs/SetCameraInfo.h>
 
 #include <boost/thread.hpp>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include <prosilica_camera/ProsilicaCameraConfig.h>
 #include "prosilica/prosilica.h"
@@ -123,6 +125,7 @@ private:
     unsigned long guid_;
     std::string   hw_id_;
     std::string   ip_address_;
+    std::string   hostname_;
     double        open_camera_retry_period_;
     std::string   trig_timestamp_topic_;
     ros::Time     trig_time_;
@@ -204,6 +207,8 @@ private:
 
         pn.param<std::string>("ip_address", ip_address_, "");
         NODELET_INFO("Loaded ip address: %s", ip_address_.c_str());
+        pn.param<std::string>("hostname", hostname_, "");
+        NODELET_INFO("Loaded hostname: %s", hostname_.c_str());
 
         pn.param<double>("open_camera_retry_period", open_camera_retry_period_, 3.);
         NODELET_INFO("Retry period: %f", open_camera_retry_period_);
@@ -260,6 +265,29 @@ private:
 
                     NODELET_INFO("Started Prosilica camera with guid \"%d\"", (int)camera_->guid());
                 }
+                else if(!hostname_.empty())
+                {
+                    state_info_ = "Trying to load camera with hostname: " + hostname_;
+                    NODELET_INFO("%s", state_info_.c_str());
+                    /* Resolve hostname */
+                    struct hostent *he;
+                    if ((he = gethostbyname(hostname_.c_str())) != NULL)
+                    {
+                      std::string resolved_hostname = std::string(inet_ntoa(*(struct in_addr*)(he->h_addr)));
+                      NODELET_INFO("hostname resolved as %s", resolved_hostname.c_str());
+                      camera_ = boost::make_shared<prosilica::Camera>(resolved_hostname.c_str());
+                      guid_ = camera_->guid();
+                      hw_id_ = boost::lexical_cast<std::string>(guid_);
+                      updater.setHardwareIDf("%d", guid_);
+
+                      NODELET_INFO("Started Prosilica camera with guid \"%d\"", (int)camera_->guid());
+                    }
+                    else
+                    {
+                      NODELET_FATAL("Failed to resolve hostname: %s", hostname_.c_str());
+                      throw std::runtime_error("Failed to resolve hostname");
+                    }
+                }
                 else
                 {
                     updater.setHardwareID("unknown");
@@ -296,7 +324,10 @@ private:
                 {
                     err << "Unable to open prosilica camera with ip address " << ip_address_ <<": "<<e.what();
                 }
-
+                else if (hostname_ != "")
+                {
+                    err << "Unable to open prosilica camera with hostname " << hostname_ <<": "<<e.what();
+                }
                 state_info_ = err.str();
                 NODELET_WARN("%s", state_info_.c_str());
                 if(prosilica::numCameras() > 0)
