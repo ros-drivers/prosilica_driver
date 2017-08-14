@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
    diagnostic_updater
    image_transport
    self_test 
-   driver_base
    rosconsole
    dynamic_reconfigure 
    camera_calibration_parsers 

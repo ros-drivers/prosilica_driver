@@ -36,7 +36,7 @@
 #include <nodelet/nodelet.h>
 #include <image_transport/image_transport.h>
 #include <dynamic_reconfigure/server.h>
-#include <driver_base/SensorLevels.h>
+#include <dynamic_reconfigure/SensorLevels.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
 #include <camera_calibration_parsers/parse_ini.h>
@@ -515,7 +515,7 @@ private:
         last_config_.height   = req.roi.height;
         last_config_.width    = req.roi.width;
 
-        reconfigureCallback(last_config_, driver_base::SensorLevels::RECONFIGURE_RUNNING);
+        reconfigureCallback(last_config_, dynamic_reconfigure::SensorLevels::RECONFIGURE_RUNNING);
 
         try
         {
@@ -690,7 +690,7 @@ private:
     {
         NODELET_DEBUG("Reconfigure request received");
 
-        if (level >= (uint32_t)driver_base::SensorLevels::RECONFIGURE_STOP)
+        if (level >= (uint32_t)dynamic_reconfigure::SensorLevels::RECONFIGURE_STOP)
             stop();
 
         //! Trigger mode
@@ -865,7 +865,7 @@ private:
 
         //! If exception thrown due to bad settings, it will fail to start camera
         //! Reload last good config
-        if (level >= (uint32_t)driver_base::SensorLevels::RECONFIGURE_STOP)
+        if (level >= (uint32_t)dynamic_reconfigure::SensorLevels::RECONFIGURE_STOP)
         {
             try
             {
