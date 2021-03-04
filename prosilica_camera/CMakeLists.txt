@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(prosilica_camera)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(catkin REQUIRED COMPONENTS 
    prosilica_gige_sdk
@@ -33,6 +34,7 @@ target_link_libraries(prosilica ${catkin_LIBRARIES})
 
 add_library(prosilica_nodelet src/nodes/prosilica_nodelet.cpp)
 target_link_libraries(prosilica_nodelet prosilica ${catkin_LIBRARIES})
+add_dependencies(prosilica_nodelet ${PROJECT_NAME}_gencfg)
 class_loader_hide_library_symbols(prosilica_nodelet)
 
 add_executable(prosilica_node src/nodes/prosilica_node.cpp)
