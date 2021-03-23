@@ -2,8 +2,8 @@
 Changelog for package prosilica_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.5 (2021-03-23)
+------------------
 * Merge pull request `#19 <https://github.com/ros-drivers/prosilica_driver/issues/19>`_ from PR2-prime/noetic-devel
   updated settings for noetic compile
 * updated settings for noetic compile
