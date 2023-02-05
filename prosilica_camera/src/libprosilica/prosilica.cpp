@@ -175,8 +175,8 @@ static void openCamera(boost::function<tPvErr (tPvCameraInfo*)> info_fn,
 Camera::Camera(unsigned long guid, size_t bufferSize)
   : bufferSize_(bufferSize), FSTmode_(None)
 {
-  openCamera(boost::bind(PvCameraInfo, guid, _1),
-             boost::bind(PvCameraOpen, guid, _1, &handle_));
+  openCamera(boost::bind(PvCameraInfo, guid, boost::placeholders::_1),
+             boost::bind(PvCameraOpen, guid, boost::placeholders::_1, &handle_));
   
   setup();
 }
@@ -186,8 +186,8 @@ Camera::Camera(const char* ip_address, size_t bufferSize)
 {
   unsigned long addr = inet_addr(ip_address);
   tPvIpSettings settings;
-  openCamera(boost::bind(PvCameraInfoByAddr, addr, _1, &settings),
-             boost::bind(PvCameraOpenByAddr, addr, _1, &handle_));
+  openCamera(boost::bind(PvCameraInfoByAddr, addr, boost::placeholders::_1, &settings),
+             boost::bind(PvCameraOpenByAddr, addr, boost::placeholders::_1, &handle_));
   
   setup();
 }
@@ -459,7 +459,7 @@ static void getStringValuedAttribute(std::string &value,
 void Camera::getAttributeEnum(const std::string &name, std::string &value)
 {
   getStringValuedAttribute(value,
-    boost::bind(PvAttrEnumGet, handle_, name.c_str(), _1, _2, _3));
+    boost::bind(PvAttrEnumGet, handle_, name.c_str(), boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3));
 }
 
 void Camera::getAttribute(const std::string &name, tPvUint32 &value)
@@ -480,7 +480,7 @@ std::string err_msg = "Couldn't get attribute " + name;
 void Camera::getAttribute(const std::string &name, std::string &value)
 {
   getStringValuedAttribute(value,
-    boost::bind(PvAttrStringGet, handle_, name.c_str(), _1, _2, _3));
+    boost::bind(PvAttrStringGet, handle_, name.c_str(), boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3));
 }
 
 void Camera::setAttributeEnum(const std::string &name, const std::string &value)
