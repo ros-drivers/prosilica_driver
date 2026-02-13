@@ -75,5 +75,8 @@ install(TARGETS prosilica prosilica_nodelet
 install(DIRECTORY launch
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-install(FILES prosilica.launch streaming.launch plugins/nodelet_plugins.xml
+install(DIRECTORY plugins 
+   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(FILES prosilica.launch streaming.launch
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

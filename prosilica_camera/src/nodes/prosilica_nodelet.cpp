@@ -230,7 +230,7 @@ private:
 
         // Setup dynamic reconfigure server
         reconfigure_server_.reset(new ReconfigureServer(config_mutex_, pn));
-        ReconfigureServer::CallbackType f = boost::bind(&ProsilicaNodelet::reconfigureCallback, this, _1, _2);
+        ReconfigureServer::CallbackType f = [this](auto cfg, uint lvl){ reconfigureCallback(cfg, lvl); };
         reconfigure_server_->setCallback(f);
     }
 
@@ -331,7 +331,7 @@ private:
     {
         try
         {
-            camera_->setKillCallback(boost::bind(&ProsilicaNodelet::kill, this, _1));
+            camera_->setKillCallback([this](unsigned long guid){kill(guid);});
 
             if(auto_adjust_stream_bytes_per_second_ && camera_->hasAttribute("StreamBytesPerSecond"))
                 camera_->setAttribute("StreamBytesPerSecond", (tPvUint32)(115000000/num_cameras));
@@ -383,22 +383,22 @@ private:
                     break;
                 case prosilica::Freerun:
                     NODELET_INFO("starting camera %s in freerun trigger mode", hw_id_.c_str());
-                    camera_->setFrameCallback(boost::bind(&ProsilicaNodelet::publishImage, this, _1));
+                    camera_->setFrameCallback([this](tPvFrame* frame){publishImage(frame);});
                     camera_->start(prosilica::Freerun, 1., prosilica::Continuous);
                     break;
                 case prosilica::FixedRate:
                     NODELET_INFO("starting camera %s in fixedrate trigger mode", hw_id_.c_str());
-                    camera_->setFrameCallback(boost::bind(&ProsilicaNodelet::publishImage, this, _1));
+                    camera_->setFrameCallback([this](tPvFrame* frame){publishImage(frame);});
                     camera_->start(prosilica::FixedRate, update_rate_, prosilica::Continuous);
                     break;
                 case prosilica::SyncIn1:
                     NODELET_INFO("starting camera %s in sync1 trigger mode", hw_id_.c_str());
-                    camera_->setFrameCallback(boost::bind(&ProsilicaNodelet::publishImage, this, _1));
+                    camera_->setFrameCallback([this](tPvFrame* frame){publishImage(frame);});
                     camera_->start(prosilica::SyncIn1, update_rate_, prosilica::Continuous);
                     break;
                 case prosilica::SyncIn2:
                     NODELET_INFO("starting camera %s in sync2 trigger mode", hw_id_.c_str());
-                    camera_->setFrameCallback(boost::bind(&ProsilicaNodelet::publishImage, this, _1));
+                    camera_->setFrameCallback([this](tPvFrame* frame){publishImage(frame);});
                     camera_->start(prosilica::SyncIn2, update_rate_, prosilica::Continuous);
                     break;
                 default:
